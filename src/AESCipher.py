@@ -1,3 +1,4 @@
+from Crypto import Random
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 from Crypto.Random import get_random_bytes
@@ -12,7 +13,7 @@ class AESCipher:
 
     '''
 
-    def __init__(self, key, chunk_size=1024**64, mode='CBC'):
+    def __init__(self, key, chunk_size=1024**2, mode='CBC'):
         assert chunk_size % 16 == 0, 'Invalid chunk size, must be multiple of 16'
         
         self.chunk_size = chunk_size
@@ -28,7 +29,7 @@ class AESCipher:
         print('Encrytping...')
         
         # initialization vector
-        iv = ''.join(chr(random.randint(0, 0xFF)) for _ in range(16))
+        iv = Random.new().read(AES.block_size)
         
         # creating an encryptor object
         encryptor = AES.new(self.key, AES.MODE_CBC, iv)
@@ -46,17 +47,15 @@ class AESCipher:
                 outfile.write(iv)
                 
                 while True:
-                    chunk = file_in.read(self.chunk_size)
+                    chunk = infile.read(self.chunk_size)
                     
                     if len(chunk) == 0:
                         break
                     else:
-                        chunk += ' ' * (16-len(chunk)%16)
+                        chunk += b' ' * (16-len(chunk)%16)
                     
                     outfile.write(encryptor.encrypt(chunk))
-             
         
-
 
     def decrypt(self, file_in, file_out):
         pass
