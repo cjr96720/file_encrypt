@@ -1,8 +1,8 @@
+import os, struct
+
 from Crypto import Random
 from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad, unpad
 from Crypto.Random import get_random_bytes
-import sys, os, struct, random
 
 
 class AESCipher:
@@ -13,7 +13,7 @@ class AESCipher:
 
     '''
 
-    def __init__(self, key, chunk_size=1024**2, mode='CBC'):
+    def __init__(self, key=None, chunk_size=1024**2, mode='CBC'):
         assert chunk_size % 16 == 0, 'Invalid chunk size, must be multiple of 16'
         
         self.chunk_size = chunk_size
@@ -22,7 +22,11 @@ class AESCipher:
         if self.mode.lower() not in ['cbc']:
             raise NotImplementedError(f'This encryption method {mode} has not been implemented')
         
-        self.generate_key(key)
+        if key is None:
+            self.generate_key(key)
+        else:
+            with open(key, 'rb') as f:
+                self.key = f.read()
 
 
     def encrypt(self, file_in, file_out=None):
@@ -57,9 +61,31 @@ class AESCipher:
                     outfile.write(encryptor.encrypt(chunk))
         
 
-    def decrypt(self, file_in, file_out):
-        pass
+    def decrypt(self, file_in, file_out=None):
+        print('Decrypting...')
+        
+        if not file_out:
+            file_out = os.path.splitext(file_in)[0]
+            
+        with open(file_in, 'rb') as infile:
+            # getting original filesize
+            original_filesize = struct.unpack('<Q', infile.read(struct.calcsize('Q')))[0]
+            
+            # initialization vetor
+            iv = infile.read(16)
 
+            # creating a decryptor object
+            decryptor = AES.new(self.key, AES.MODE_CBC, iv)
+
+            with open(file_out, 'wb') as outfile:
+                while True:
+                    chunk = infile.read(self.chunk_size)
+
+                    if len(chunk) == 0:
+                        break
+                    outfile.write(decryptor.decrypt(chunk))
+                outfile.truncate(original_filesize)
+                
 
     def generate_key(self, key=None):
         '''
@@ -67,8 +93,6 @@ class AESCipher:
         '''
         if key == None: 
             self.key = get_random_bytes(32)
-        else:
-            pass
 
 
     def get_key(self):

@@ -25,6 +25,8 @@ if __name__ == '__main__':
     
     actions.get(args.action)(args.file_selected, args.output)
     
+    print('Done')
+    
 
 
     
